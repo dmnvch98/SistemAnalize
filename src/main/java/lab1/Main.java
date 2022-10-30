@@ -1,18 +1,21 @@
 package lab1;
 
+import java.io.*;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.RoundingMode;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class Main {
+    public static final String PATH = "SistemAnalize";
     private static final DecimalFormat df = new DecimalFormat("0.00");
-
-    public static double generateValue(int a, int R, int m) {
-        double aRnMinusOne = a * R;
-        double Rn = aRnMinusOne % m;
-        return Rn / m;
-    }
 
     public static int getK(Double[] array) {
         List<Double> even = new ArrayList<>();
@@ -44,7 +47,7 @@ public class Main {
         List<Double> resultList6 = new ArrayList<>();
         List<Double> resultList7 = new ArrayList<>();
 
-        for (Double d:list) {
+        for (Double d : list) {
             if (d <= 0.14) {
                 resultList.add(d);
             } else if (d >= 0.14 && d <= 0.28) {
@@ -70,22 +73,150 @@ public class Main {
         System.out.println("0.7 - 0.84 : " + resultList6.size() + " : " + resultList);
         System.out.println("0.84 - 1 : " + resultList7.size() + " : " + resultList);
     }
-    public static void main(String[] args) {
-        Double[] array = new Double[]{0.43, 0.35, 0.50, 0.33, 0.35, 0.45, 0.49, 0.19, 0.50, 0.11, 0.11, 0.54, 0.63, 0.01, 0.43, 0.63, 0.23, 0.01, 0.90, 0.73, 0.89, 0.18, 0.37, 0.75, 0.83, 0.66, 0.19, 0.01, 0.24, 0.03, 0.32, 0.44, 0.13, 0.51, 0.63, 0.40, 0.02, 0.28, 0.67, 0.66, 0.77, 0.89, 0.05, 0.06, 0.60, 0.44, 0.21, 0.92, 0.16, 0.51, 0.66, 0.13, 0.94, 0.07, 0.09, 0.55, 0.28, 0.24, 0.67, 0.26, 0.47, 0.15, 0.59, 0.02, 0.16, 0.44, 0.38, 0.10, 0.72, 1.00, 0.06, 0.73, 0.60, 0.28, 0.99, 0.20, 0.92, 0.14, 0.37, 0.71, 0.24, 0.68, 0.91, 0.08, 0.39, 0.13, 0.67, 0.35, 0.28, 0.93, 0.22, 0.59, 0.43, 0.19, 0.40, 0.10, 0.34, 0.08, 0.52, 0.58};
 
-        List<Double> generatedValues = new ArrayList<>();
-        int n = 50000;
-        int R = 349;
-        int a = 399;
-        int m = 391;
+    public static void main(String[] args) {
+        generateValuesWithBIAndWriteInFile();
+    }
+
+    public static void deleteIfFileExists() {
+        Path root = Paths.get(PATH);
+        File existingFile = new File(root.toFile().toURI());
+
+        if (existingFile.exists() && existingFile.isFile()) {
+            existingFile.delete();
+        }
+    }
+
+    public static List<BigDecimal> generateValues(BigDecimal R, BigDecimal a, BigDecimal m) {
+        List<BigDecimal> generatedValues = new ArrayList<>();
+        BigDecimal RnMinusOne = R;
+        for (int i = 0; i < 100000; i++) {
+            BigDecimal aRnMinusOne = a.multiply(RnMinusOne);
+            BigDecimal Rn = aRnMinusOne.remainder(m);
+            BigDecimal generatedValue = Rn.divide(m, 10, RoundingMode.DOWN);
+            generatedValues.add(generatedValue);
+            RnMinusOne = Rn;
+        }
+        return generatedValues;
+    }
+    public static void generateValuesWithBIAndWriteInFile() {
+        List<Integer> listOfI = new ArrayList<>();
+        List<BigDecimal> generatedValues = new ArrayList<>();
+        try (BufferedWriter writer = Files.newBufferedWriter(Path.of(PATH), StandardCharsets.UTF_8)) {
+            int n = 32;
+            BigDecimal R = BigDecimal
+                    .valueOf(2)
+                    .pow(n)
+                    .subtract(BigDecimal.valueOf(5));
+            BigDecimal a = BigDecimal
+                    .valueOf(2)
+                    .pow(n - 2);
+            BigDecimal m = BigDecimal
+                    .valueOf(2)
+                    .pow(n)
+                    .subtract(BigDecimal.valueOf(3));
+            BigDecimal RnMinusOne = R;
+            BigDecimal Xv = BigDecimal.valueOf(0);
+            for (int i = 0; i < 100000; i++) {
+                BigDecimal aRnMinusOne = a.multiply(RnMinusOne);
+                BigDecimal Rn = aRnMinusOne.remainder(m);
+                BigDecimal generatedValue = Rn.divide(m, 10, RoundingMode.DOWN);
+                RnMinusOne = Rn;
+                if (i == 99999) {
+                    Xv = generatedValue;
+                }
+            }
+            for (int i = 0; i < 200000; i++) {
+                BigDecimal aRnMinusOne = a.multiply(RnMinusOne);
+                BigDecimal Rn = aRnMinusOne.remainder(m);
+                BigDecimal generatedValue = Rn.divide(m, 10, RoundingMode.DOWN);
+                generatedValues.add(generatedValue);
+                RnMinusOne = Rn;
+                if (generatedValue.equals(Xv)) {
+                    listOfI.add(i);
+                }
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        int P = listOfI.get(1) - listOfI.get(0);
+        for (int i = 0; i < 200000; i++) {
+            BigDecimal xi3 = generatedValues.get(i);
+            BigDecimal xi3PlusP = generatedValues.get(P + i);
+            if (xi3.equals(xi3PlusP)) {
+                System.out.println("i3 = " + i);
+                return;
+            }
+        }
+
+    }
+
+    public static void generateValuesAndWriteInFile() {
+        deleteIfFileExists();
+        Path path = Paths.get(PATH);
+        try (BufferedWriter writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8)) {
+            int n = 100000;
+            int R = 349123;
+            int a = 399123;
+            int m = 391123;
+            double RnMinusOne = R;
+            for (int i = 0; i < n; i++) {
+                double aRnMinusOne = a * (RnMinusOne);
+                double Rn = aRnMinusOne % (m);
+                double generatedValue = Rn / (m);
+                writer.write(generatedValue + "\n");
+                RnMinusOne = Rn;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void getP() {
+        Path path = Paths.get("SistemAnalize");
+        List<Integer> listOfI = new ArrayList<>();
+        int n = 100000;
+        int R = 349123;
+        int a = 399123;
+        int m = 391123;
         double RnMinusOne = R;
+        double Xv = 0;
         for (int i = 0; i < n; i++) {
             double aRnMinusOne = a * RnMinusOne;
             double Rn = aRnMinusOne % m;
             double generatedValue = Rn / m;
-            generatedValues.add(generatedValue);
-            RnMinusOne = Rn;
+            if (i == 99999) {
+                Xv = generatedValue;
+                break;
+            }
         }
-        //System.out.println(generatedValues);
+        System.out.println("firdt loop = " + Xv);
+        for (int i = 0; i < n; i++) {
+            double aRnMinusOne = a * RnMinusOne;
+            double Rn = aRnMinusOne % m;
+            double generatedValue = Rn / m;
+            RnMinusOne = Rn;
+            if (generatedValue == Xv) {
+                listOfI.add(i);
+                System.out.println("second loop = " + generatedValue);
+            }
+        }
+        System.out.println(listOfI.get(1) - listOfI.get(0));
+
+    }
+
+    public static void readFromDocument(int lines) {
+        try (BufferedReader br = new BufferedReader(new FileReader("SistemAnalize"))) {
+            for (int i = 0; i < lines; i++) {
+                String line;
+                if ((line = br.readLine()) != null) {
+                    System.out.println(line);
+                }
+            }
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

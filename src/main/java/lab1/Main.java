@@ -78,70 +78,50 @@ public class Main {
         generateValuesWithBIAndWriteInFile();
     }
 
-    public static void deleteIfFileExists() {
-        Path root = Paths.get(PATH);
-        File existingFile = new File(root.toFile().toURI());
-
-        if (existingFile.exists() && existingFile.isFile()) {
-            existingFile.delete();
-        }
-    }
-
-    public static List<BigDecimal> generateValues(BigDecimal R, BigDecimal a, BigDecimal m) {
+    public static List<BigDecimal> generateValues(BigDecimal R, BigDecimal a, BigDecimal m, int loopSize) {
         List<BigDecimal> generatedValues = new ArrayList<>();
         BigDecimal RnMinusOne = R;
-        for (int i = 0; i < 100000; i++) {
-            BigDecimal aRnMinusOne = a.multiply(RnMinusOne);
-            BigDecimal Rn = aRnMinusOne.remainder(m);
-            BigDecimal generatedValue = Rn.divide(m, 10, RoundingMode.DOWN);
-            generatedValues.add(generatedValue);
-            RnMinusOne = Rn;
-        }
-        return generatedValues;
-    }
-    public static void generateValuesWithBIAndWriteInFile() {
-        List<Integer> listOfI = new ArrayList<>();
-        List<BigDecimal> generatedValues = new ArrayList<>();
         try (BufferedWriter writer = Files.newBufferedWriter(Path.of(PATH), StandardCharsets.UTF_8)) {
-            int n = 32;
-            BigDecimal R = BigDecimal
-                    .valueOf(2)
-                    .pow(n)
-                    .subtract(BigDecimal.valueOf(5));
-            BigDecimal a = BigDecimal
-                    .valueOf(2)
-                    .pow(n - 2);
-            BigDecimal m = BigDecimal
-                    .valueOf(2)
-                    .pow(n)
-                    .subtract(BigDecimal.valueOf(3));
-            BigDecimal RnMinusOne = R;
-            BigDecimal Xv = BigDecimal.valueOf(0);
-            for (int i = 0; i < 100000; i++) {
-                BigDecimal aRnMinusOne = a.multiply(RnMinusOne);
-                BigDecimal Rn = aRnMinusOne.remainder(m);
-                BigDecimal generatedValue = Rn.divide(m, 10, RoundingMode.DOWN);
-                RnMinusOne = Rn;
-                if (i == 99999) {
-                    Xv = generatedValue;
-                }
-            }
-            for (int i = 0; i < 200000; i++) {
+            for (int i = 0; i < loopSize; i++) {
                 BigDecimal aRnMinusOne = a.multiply(RnMinusOne);
                 BigDecimal Rn = aRnMinusOne.remainder(m);
                 BigDecimal generatedValue = Rn.divide(m, 10, RoundingMode.DOWN);
                 generatedValues.add(generatedValue);
+                writer.write(generatedValue + "\n");
                 RnMinusOne = Rn;
-                if (generatedValue.equals(Xv)) {
-                    listOfI.add(i);
-                }
             }
-
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return generatedValues;
+    }
+
+    public static void generateValuesWithBIAndWriteInFile() {
+        List<Integer> listOfI = new ArrayList<>();
+        List<BigDecimal> generatedValues;
+        int n = 32;
+        BigDecimal R = BigDecimal
+                .valueOf(2)
+                .pow(n)
+                .subtract(BigDecimal.valueOf(5));
+        BigDecimal a = BigDecimal
+                .valueOf(2)
+                .pow(n - 2);
+        BigDecimal m = BigDecimal
+                .valueOf(2)
+                .pow(n)
+                .subtract(BigDecimal.valueOf(3));
+        generatedValues = generateValues(R, a, m, 100000);
+        BigDecimal Xv = generatedValues.get(99999);
+        generatedValues = generateValues(R, a, m, 200000);
+        for (int i = 0; i < generatedValues.size(); i++) {
+            if (generatedValues.get(i).equals(Xv)) {
+                listOfI.add(i);
+            }
+        }
+
         int P = listOfI.get(1) - listOfI.get(0);
-        for (int i = 0; i < 200000; i++) {
+        for (int i = 0; i < generatedValues.size(); i++) {
             BigDecimal xi3 = generatedValues.get(i);
             BigDecimal xi3PlusP = generatedValues.get(P + i);
             if (xi3.equals(xi3PlusP)) {
@@ -149,11 +129,9 @@ public class Main {
                 return;
             }
         }
-
     }
 
     public static void generateValuesAndWriteInFile() {
-        deleteIfFileExists();
         Path path = Paths.get(PATH);
         try (BufferedWriter writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8)) {
             int n = 100000;
@@ -204,19 +182,5 @@ public class Main {
         }
         System.out.println(listOfI.get(1) - listOfI.get(0));
 
-    }
-
-    public static void readFromDocument(int lines) {
-        try (BufferedReader br = new BufferedReader(new FileReader("SistemAnalize"))) {
-            for (int i = 0; i < lines; i++) {
-                String line;
-                if ((line = br.readLine()) != null) {
-                    System.out.println(line);
-                }
-            }
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 }
